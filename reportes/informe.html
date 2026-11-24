@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Informe de Performance - k6</title>
+<style>
+  @page { size: A4; margin: 20mm 18mm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+         color: #1f2933; font-size: 11pt; line-height: 1.5; margin: 0; }
+  h1,h2,h3 { color: #11324d; line-height: 1.25; }
+  h1 { font-size: 20pt; margin: 0 0 4px; }
+  h2 { font-size: 14pt; border-bottom: 2px solid #2e6fb7; padding-bottom: 4px; margin: 26px 0 10px; }
+  h3 { font-size: 12pt; margin: 16px 0 6px; color: #2e6fb7; }
+  p { margin: 6px 0; text-align: justify; }
+  .muted { color: #5c6b7a; }
+  code, .mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 9.5pt; }
+  pre { background:#f4f7fb; border:1px solid #d9e2ec; border-radius:6px; padding:10px 12px;
+        font-family:"SF Mono",Menlo,Consolas,monospace; font-size:9pt; overflow:auto; white-space:pre-wrap; }
+  table { width:100%; border-collapse: collapse; margin:10px 0; font-size:10pt; }
+  th,td { border:1px solid #d9e2ec; padding:6px 9px; text-align:left; vertical-align:top; }
+  th { background:#eaf1fb; color:#11324d; }
+  tr:nth-child(even) td { background:#f8fafd; }
+  .kpi { display:flex; gap:10px; margin:12px 0; }
+  .kpi div { flex:1; border:1px solid #d9e2ec; border-radius:8px; padding:10px; text-align:center; background:#f8fafd; }
+  .kpi .n { font-size:17pt; font-weight:700; color:#2e6fb7; display:block; }
+  .kpi .l { font-size:8.5pt; color:#5c6b7a; text-transform:uppercase; letter-spacing:.3px; }
+  .ok { color:#1f8a44; font-weight:600; }
+  .warn { color:#b9770e; font-weight:600; }
+  img { max-width:100%; border:1px solid #d9e2ec; border-radius:6px; }
+  .cap { font-size:8.5pt; color:#5c6b7a; margin-top:4px; text-align:center; }
+  .cover { text-align:center; padding-top:40mm; }
+  .cover .u { font-size:13pt; color:#2e6fb7; font-weight:600; }
+  .cover .t { font-size:24pt; color:#11324d; font-weight:700; margin:18px 0 6px; }
+  .cover .s { font-size:13pt; color:#334e68; }
+  .cover .meta { margin-top:36mm; font-size:11pt; color:#334e68; }
+  .pagebreak { page-break-before: always; }
+  ul { margin:6px 0 6px 18px; } li { margin:3px 0; }
+  .badge { display:inline-block; background:#1f8a44; color:#fff; border-radius:4px; padding:1px 7px; font-size:9pt; }
+</style>
+</head>
+<body>
+
+<!-- PORTADA -->
+<section class="cover">
+  <div class="u">Universidad Católica Boliviana</div>
+  <div class="muted">Diplomado en Testing de Software V6 &middot; Módulo: Testing de Performance</div>
+  <div class="t">Evaluación de Rendimiento de una Aplicación Web con k6</div>
+  <div class="s">Flujo crítico: Generación de Comprobantes Contables (Traspaso)</div>
+  <div class="meta">
+    <strong>Sistema bajo prueba:</strong> Sistema Financiero (MinkaFinanciero)<br>
+    <span class="mono">http://srv1311911.hstgr.cloud/financierodiplomado/</span><br><br>
+    <strong>Grupo:</strong> 3 &nbsp;&middot;&nbsp; <strong>Mes de trabajo:</strong> Septiembre 2026<br>
+    <strong>Herramienta:</strong> Grafana k6 v2.3.0<br>
+    <strong>Fecha:</strong> 20 de noviembre de 2026
+  </div>
+</section>
+
+<!-- 1. INTRODUCCIÓN Y ALCANCE -->
+<section class="pagebreak">
+<h2>1. Introducción y Alcance</h2>
+
+<h3>1.1 Contexto de la aplicación</h3>
+<p>El sistema evaluado es una aplicación financiero-contable de una clínica, que gestiona
+pacientes, facturación, caja y contabilidad. Está organizada en módulos (RRHH, Contabilidad,
+Administración/Caja y Reportes) accesibles mediante <span class="mono">index.php?opcion=&lt;...&gt;</span>.</p>
+
+<h3>1.2 Arquitectura tecnológica</h3>
+<table>
+  <tr><th>Capa</th><th>Tecnología</th></tr>
+  <tr><td>Servidor web</td><td>Apache 2.4.62 (AlmaLinux)</td></tr>
+  <tr><td>Lenguaje</td><td>PHP 7.4.33 (renderizado del lado del servidor)</td></tr>
+  <tr><td>Front-end</td><td>HTML + jQuery / Bootstrap Material Dashboard, llamadas AJAX</td></tr>
+  <tr><td>Sesión</td><td>Cookie <span class="mono">PHPSESSID</span> (login por formulario <span class="mono">session.php</span>)</td></tr>
+</table>
+
+<h3>1.3 Flujo crítico de negocio evaluado</h3>
+<p>Se seleccionó la <strong>generación de comprobantes contables (traspaso)</strong> dentro del
+módulo de Contabilidad, por ser una transacción de escritura representativa que ejercita
+autenticación, renderizado de formularios complejos y persistencia contable (asientos Debe/Haber).</p>
+
+<h3>1.4 Criterios de éxito (objetivos de rendimiento)</h3>
+<table>
+  <tr><th>Métrica</th><th>Objetivo (SLA)</th></tr>
+  <tr><td>Tiempo de respuesta P95 (<span class="mono">http_req_duration</span>)</td><td>&lt; 1500 ms</td></tr>
+  <tr><td>Tiempo de respuesta P99</td><td>&lt; 2500 ms</td></tr>
+  <tr><td>Tasa de errores (<span class="mono">http_req_failed</span>)</td><td>&lt; 1%</td></tr>
+  <tr><td>Aserciones correctas (<span class="mono">checks</span>)</td><td>&gt; 99%</td></tr>
+</table>
+</section>
+
+<!-- 2. FUNCIONALIDADES Y MODELO DE CARGA -->
+<section class="pagebreak">
+<h2>2. Definición de Funcionalidades y Modelo de Carga</h2>
+
+<h3>2.1 Flujo de usuario crítico</h3>
+<table>
+  <tr><th>#</th><th>Paso</th><th>Petición</th></tr>
+  <tr><td>1</td><td>Autenticación</td><td><span class="mono">POST session.php</span> → cookie PHPSESSID</td></tr>
+  <tr><td>2</td><td>Entrar a Contabilidad</td><td><span class="mono">GET modulo.php?codigo=3</span></td></tr>
+  <tr><td>3</td><td>Abrir registro de comprobante</td><td><span class="mono">GET comprobantes/register.php</span></td></tr>
+  <tr><td>4</td><td>Emitir comprobante (traspaso)</td><td><span class="mono">POST comprobantes/save.php</span></td></tr>
+</table>
+
+<h3>2.2 Perfil de carga (tipos de prueba)</h3>
+<table>
+  <tr><th>Prueba</th><th>Objetivo</th><th>Perfil (VUs / duración)</th></tr>
+  <tr><td>Smoke</td><td>Verificar el flujo y las correlaciones</td><td>1 VU, pocas iteraciones</td></tr>
+  <tr><td>Carga sostenida</td><td>Validar SLAs bajo carga nominal</td><td>0→10→10→0 VUs (~1m50s)</td></tr>
+  <tr><td>Spike</td><td>Respuesta ante pico súbito</td><td>5→<strong>100</strong>→5 VUs (~75s)</td></tr>
+  <tr><td>Estrés</td><td>Hallar el punto de quiebre</td><td>50→150→<strong>300</strong>→0 VUs (~5.5m)</td></tr>
+</table>
+<p class="muted">La corrida analizada en este informe corresponde a la <strong>carga sostenida</strong>
+(10 VUs). Las pruebas de spike y estrés incrementan la carga sobre un servidor compartido y
+deben ejecutarse coordinadas con el equipo.</p>
+</section>
+
+<!-- 3. SCRIPTS k6 -->
+<section class="pagebreak">
+<h2>3. Desarrollo de Scripts en k6</h2>
+
+<h3>3.1 Estructura modular del repositorio</h3>
+<pre>trabajo-final/
+├── config/config.js           # BASE_URL, credenciales, thresholds (SLAs), flags
+├── data/
+│   ├── movimientos.json        # datos externos (traspasos: Debe/Haber/monto)
+│   └── movimientos.js          # SharedArray (parametrización)
+├── lib/
+│   ├── auth.js                 # login() -> sesión PHPSESSID
+│   ├── comprobanteContable.js  # abrir registro / generar traspaso
+│   └── flujo.js                # flujo de negocio reutilizable
+└── scenarios/ smoke · carga · spike · estres</pre>
+
+<h3>3.2 Parametrización de datos (SharedArray)</h3>
+<p>Los datos de los traspasos se cargan una sola vez en memoria y se comparten entre todos
+los VUs, optimizando el consumo de RAM:</p>
+<pre>export const movimientos = new SharedArray('movimientos traspaso', () =&gt;
+  JSON.parse(open('./movimientos.json')));</pre>
+
+<h3>3.3 Correlación (extracción dinámica)</h3>
+<p>Se capturan y reutilizan tres valores que devuelve el servidor:</p>
+<ul>
+  <li><strong>PHPSESSID</strong> — tomado del <span class="mono">cookieJar</span> en el login y reinyectado.</li>
+  <li><strong>Cabecera del comprobante</strong> (<span class="mono">global_gestion</span>, <span class="mono">global_mes</span>,
+      <span class="mono">unidad_organizacional</span>, <span class="mono">cod_cuenta_configuracion_iva</span>) —
+      extraída por expresión regular de <span class="mono">register.php</span>.</li>
+  <li><strong>Id del comprobante creado</strong> — extraído de la respuesta de <span class="mono">save.php</span>
+      (<span class="mono">imp.php?comp=&lt;id&gt;</span>).</li>
+</ul>
+<pre>const m = res.body.match(/imp\.php\?comp=(\d+)/);
+const comprobanteId = m ? m[1] : null;   // correlación del id emitido</pre>
+
+<h3>3.4 Validaciones de negocio (checks) y Thresholds</h3>
+<p>Los <span class="mono">check()</span> verifican <strong>estado HTTP</strong>, <strong>contenido</strong>
+(formulario presente, id devuelto, sin errores de validación) y <strong>tiempo de respuesta</strong>.
+Los umbrales de aprobación/fallo definidos son:</p>
+<pre>thresholds: {
+  http_req_failed:   ['rate&lt;0.01'],                 // &lt; 1% errores
+  http_req_duration: ['p(95)&lt;1500', 'p(99)&lt;2500'],  // SLA de latencia
+  checks:            ['rate&gt;0.99'],                  // &gt; 99% aserciones OK
+  'group_duration{group:::Generar comprobante}': ['p(95)&lt;3000'],
+}</pre>
+</section>
+
+<!-- 4. OBSERVABILIDAD -->
+<section class="pagebreak">
+<h2>4. Ejecución y Observabilidad con Grafana</h2>
+<p>Las métricas se visualizaron con el <strong>dashboard web integrado de k6</strong> (de Grafana),
+que expone en tiempo real el RPS, la distribución de latencias (P90/P95/P99), los usuarios
+virtuales y la tasa de errores, y exporta un reporte HTML autocontenido:</p>
+<pre>K6_WEB_DASHBOARD=true K6_WEB_DASHBOARD_EXPORT=reportes/dashboard-carga.html \
+k6 run --summary-export reportes/summary-carga.json scenarios/carga.js</pre>
+
+<img src="dashboard-overview.png" alt="Dashboard k6/Grafana">
+<div class="cap">Figura 1. Dashboard k6 (Grafana) — carga sostenida 10 VUs. Request Rate (verde),
+Request Duration P95 (azul) y Request Failed. Se observa un pico aislado de latencia ~22:49.</div>
+
+<h3>4.1 Resultados de la corrida (carga sostenida, 10 VUs)</h3>
+<div class="kpi">
+  <div><span class="n">0.00%</span><span class="l">Errores HTTP</span></div>
+  <div><span class="n">828 ms</span><span class="l">Latencia P95</span></div>
+  <div><span class="n">1.44 s</span><span class="l">Latencia P99</span></div>
+  <div><span class="n">12.3/s</span><span class="l">RPS</span></div>
+</div>
+<table>
+  <tr><th>Métrica</th><th>Valor</th><th>SLA</th><th>Estado</th></tr>
+  <tr><td>Iteraciones completadas</td><td>452</td><td>—</td><td>—</td></tr>
+  <tr><td>Peticiones HTTP</td><td>1356 (≈12.3 req/s)</td><td>—</td><td>—</td></tr>
+  <tr><td>Latencia media / mediana</td><td>283 ms / 105 ms</td><td>—</td><td>—</td></tr>
+  <tr><td>Latencia P95 / P99 / máx</td><td>828 ms / 1.44 s / 2.65 s</td><td>P95&lt;1.5s · P99&lt;2.5s</td><td class="ok">CUMPLE</td></tr>
+  <tr><td>Tasa de errores</td><td>0.00% (0/1356)</td><td>&lt; 1%</td><td class="ok">CUMPLE</td></tr>
+  <tr><td>Aserciones (checks)</td><td>99.85% (2708/2712)</td><td>&gt; 99%</td><td class="ok">CUMPLE</td></tr>
+  <tr><td>Datos recibidos</td><td>168 MB (≈1.5 MB/s)</td><td>—</td><td>—</td></tr>
+</table>
+</section>
+
+<!-- 5. ANÁLISIS Y CONCLUSIONES -->
+<section class="pagebreak">
+<h2>5. Análisis de Resultados y Conclusiones</h2>
+
+<h3>5.1 Interpretación de las gráficas</h3>
+<p>Durante la meseta de carga (10 VUs) el sistema sostuvo un <strong>RPS estable de 12–16 req/s</strong>
+con <strong>0% de errores</strong>. La latencia P95 se mantuvo entre 500 y 830 ms, salvo un
+<strong>pico aislado cercano a 1.8 s</strong> (visible hacia las 22:49 en la Figura 1 y reflejado en el
+máximo de login de 2.76 s). La tasa de transferencia se estabilizó en ~2 MB/s, acumulando 168 MB
+recibidos en menos de dos minutos — una señal temprana del peso de las páginas.</p>
+
+<h3>5.2 Descomposición por transacción</h3>
+<p>Separando el tiempo por grupo se identifica con claridad dónde se concentra la latencia:</p>
+<table>
+  <tr><th>Transacción</th><th>Mediana</th><th>P90</th><th>P95</th><th>Máx</th></tr>
+  <tr><td>Login (<span class="mono">session.php</span>)</td><td>197 ms</td><td>227 ms</td><td>256 ms</td><td>2.76 s</td></tr>
+  <tr><td>Abrir registro (<span class="mono">register.php</span>)</td><td>622 ms</td><td>891 ms</td><td><strong>1071 ms</strong></td><td>1.79 s</td></tr>
+</table>
+
+<svg viewBox="0 0 520 210" width="100%" style="max-width:520px;border:1px solid #d9e2ec;border-radius:6px;background:#fff">
+  <text x="10" y="18" font-size="12" font-weight="700" fill="#11324d">Latencia por transacción (ms)</text>
+  <!-- ejes -->
+  <line x1="55" y1="30" x2="55" y2="170" stroke="#aab" stroke-width="1"/>
+  <line x1="55" y1="170" x2="500" y2="170" stroke="#aab" stroke-width="1"/>
+  <!-- escala: 1200ms -> 140px; factor 0.1083 -->
+  <!-- gridlines -->
+  <g font-size="8" fill="#889">
+    <line x1="55" y1="170" x2="500" y2="170" stroke="#eee"/>
+    <line x1="55" y1="116" x2="500" y2="116" stroke="#eee"/><text x="20" y="119">500</text>
+    <line x1="55" y1="62" x2="500" y2="62" stroke="#eee"/><text x="14" y="65">1000</text>
+    <text x="40" y="173">0</text>
+  </g>
+  <!-- Login group (med,p90,p95): 197,227,256 -->
+  <g>
+    <rect x="80"  y="148.7" width="34" height="21.3" fill="#7bb0e0"/>
+    <rect x="118" y="145.4" width="34" height="24.6" fill="#4e8cc9"/>
+    <rect x="156" y="142.3" width="34" height="27.7" fill="#2e6fb7"/>
+    <text x="135" y="185" font-size="9" text-anchor="middle" fill="#334e68">Login</text>
+  </g>
+  <!-- Abrir registro (med,p90,p95): 622,891,1071 -->
+  <g>
+    <rect x="300" y="102.6" width="34" height="67.4" fill="#7bb0e0"/>
+    <rect x="338" y="73.5"  width="34" height="96.5" fill="#4e8cc9"/>
+    <rect x="376" y="54.0"  width="34" height="116" fill="#2e6fb7"/>
+    <text x="355" y="185" font-size="9" text-anchor="middle" fill="#334e68">Abrir registro (register.php)</text>
+  </g>
+  <!-- leyenda -->
+  <g font-size="8" fill="#334e68">
+    <rect x="410" y="26" width="10" height="10" fill="#7bb0e0"/><text x="424" y="35">Mediana</text>
+    <rect x="410" y="40" width="10" height="10" fill="#4e8cc9"/><text x="424" y="49">P90</text>
+    <rect x="410" y="54" width="10" height="10" fill="#2e6fb7"/><text x="424" y="63">P95</text>
+  </g>
+</svg>
+<div class="cap">Figura 2. <span class="mono">register.php</span> concentra la latencia: su P95 (1071 ms)
+es ~4&times; el de la autenticación (256 ms).</div>
+
+<h3>5.3 Cuellos de botella identificados</h3>
+<ul>
+  <li><strong>Renderizado pesado de <span class="mono">register.php</span> (principal).</strong> La pantalla
+  de registro pesa ~371 KB y embebe catálogos completos (plan de cuentas con 234 cuentas, áreas,
+  configuraciones). Explica los 168 MB transferidos y domina la latencia (P95 ~1 s). Es un cuello de
+  botella de <em>presentación / transferencia</em>, no de la escritura contable.</li>
+  <li><strong>Picos de latencia en autenticación.</strong> El login tiene una mediana de 197 ms pero un
+  máximo de 2.76 s en 4 casos aislados: posible contención puntual (conexiones a BD o bloqueo de sesión)
+  bajo concurrencia, a vigilar en pruebas de estrés.</li>
+  <li><strong>Volumen de red elevado.</strong> ~1.5 MB/s con solo 10 VUs anticipa saturación de ancho de
+  banda y del render PHP al escalar a spike/estrés.</li>
+</ul>
+
+<h3>5.4 Conclusiones</h3>
+<p>Bajo carga nominal (10 VUs) el sistema es <strong>estable y cumple todos los SLAs</strong>:
+0% de errores, P95 de 828 ms (&lt; 1.5 s) y P99 de 1.44 s (&lt; 2.5 s), con 99.85% de aserciones
+correctas. El rendimiento está limitado principalmente por el <strong>peso de los formularios
+server-side</strong> (especialmente <span class="mono">register.php</span>) y no por la transacción
+de guardado, que respondió por debajo de 200 ms. Los picos esporádicos de login son el riesgo a
+confirmar en cargas mayores.</p>
+
+<h3>5.5 Recomendaciones de optimización</h3>
+<ul>
+  <li><strong>Aligerar <span class="mono">register.php</span>:</strong> cargar los catálogos (plan de
+  cuentas, áreas) bajo demanda vía AJAX/paginación server-side — el buscador de cuentas ya usa
+  DataTables <em>serverSide</em>; aplicar el mismo patrón al resto evitaría embeber 234 cuentas en el HTML.</li>
+  <li><strong>Compresión HTTP:</strong> habilitar <span class="mono">mod_deflate</span> (gzip/brotli) para
+  HTML/JS/CSS; reduciría directamente los 168 MB transferidos.</li>
+  <li><strong>Caché de catálogos</strong> poco cambiantes (plan de cuentas, áreas) en memoria/Redis o
+  cliente, en lugar de reconsultarlos en cada apertura del formulario.</li>
+  <li><strong>Optimizar la BD:</strong> índices sobre las consultas de cuentas/comprobantes y revisión de
+  <span class="mono">N+1</span> en el armado del formulario.</li>
+  <li><strong>Assets estáticos:</strong> minificar y consolidar los numerosos JS/CSS y servirlos con
+  cabeceras de caché (o CDN).</li>
+  <li><strong>Autenticación:</strong> revisar el pool de conexiones y el manejo de sesión para eliminar
+  los picos de login bajo concurrencia.</li>
+  <li><strong>Siguiente paso de pruebas:</strong> ejecutar los escenarios de <em>spike</em> (100 VUs) y
+  <em>estrés</em> (hasta 300 VUs), coordinados con el equipo, para determinar el punto de quiebre y
+  validar el comportamiento del guardado (<span class="mono">save.php</span>) bajo alta concurrencia.</li>
+</ul>
+</section>
+
+<!-- ANEXOS -->
+<section class="pagebreak">
+<h2>Anexos</h2>
+<h3>A. Comandos de ejecución</h3>
+<pre># Verificación (no genera comprobantes)
+k6 run scenarios/smoke.js
+
+# Carga con dashboard de Grafana + reporte HTML
+K6_WEB_DASHBOARD=true K6_WEB_DASHBOARD_EXPORT=reportes/dashboard-carga.html \
+k6 run scenarios/carga.js
+
+# Generación real de comprobantes (crea registros)
+k6 run -e GENERAR=true scenarios/carga.js</pre>
+<h3>B. Artefactos</h3>
+<ul>
+  <li><span class="mono">reportes/dashboard-carga.html</span> — dashboard interactivo de la corrida.</li>
+  <li><span class="mono">reportes/summary-carga.json</span> — métricas agregadas (fuente de las tablas).</li>
+  <li>Repositorio de código: scripts k6 modulares (config / data / lib / scenarios).</li>
+</ul>
+<p class="muted">Nota: la generación de comprobantes (<span class="mono">save.php</span>) crea registros
+contables reales; durante la construcción y validación del script se emitieron comprobantes de prueba
+etiquetados como "GRUPO 3" en el mes de septiembre.</p>
+</section>
+
+</body>
+</html>

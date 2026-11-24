@@ -1,0 +1,211 @@
+{
+    "metrics": {
+        "group_duration": {
+            "max": 1666.386792,
+            "p(90)": 768.5746918,
+            "p(95)": 904.4842088,
+            "avg": 341.0835030256811,
+            "min": 109.413042,
+            "med": 190.922834
+        },
+        "checks": {
+            "passes": 2998,
+            "fails": 0,
+            "thresholds": {
+                "rate>0.99": false
+            },
+            "value": 1
+        },
+        "http_req_connecting": {
+            "avg": 1.2318856476079347,
+            "min": 0,
+            "med": 0,
+            "max": 240.671,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "http_req_tls_handshaking": {
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "http_req_sending": {
+            "min": 0.003,
+            "med": 0.018,
+            "max": 2.771,
+            "p(90)": 0.045,
+            "p(95)": 0.06334999999999992,
+            "avg": 0.028387397899650037
+        },
+        "data_received": {
+            "count": 161055306,
+            "rate": 1150385.880855306
+        },
+        "iterations": {
+            "count": 428,
+            "rate": 3.057118509377586
+        },
+        "http_req_duration": {
+            "avg": 247.47221645274217,
+            "min": 76.264,
+            "med": 115.3665,
+            "max": 1641.326,
+            "p(90)": 695.076,
+            "p(95)": 813.1694999999995,
+            "thresholds": {
+                "p(99)<2500": false,
+                "p(95)<1500": false
+            }
+        },
+        "vus_max": {
+            "value": 10,
+            "min": 10,
+            "max": 10
+        },
+        "http_req_failed": {
+            "fails": 1714,
+            "passes": 0,
+            "thresholds": {
+                "rate<0.01": false
+            },
+            "value": 0
+        },
+        "vus": {
+            "value": 1,
+            "min": 1,
+            "max": 10
+        },
+        "http_req_blocked": {
+            "min": 0,
+            "med": 0.004,
+            "max": 241.121,
+            "p(90)": 0.012,
+            "p(95)": 0.018,
+            "avg": 1.243719953325543
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(95)": 813.1694999999995,
+            "avg": 247.47221645274217,
+            "min": 76.264,
+            "med": 115.3665,
+            "max": 1641.326,
+            "p(90)": 695.076
+        },
+        "data_sent": {
+            "count": 740870,
+            "rate": 5291.886425333112
+        },
+        "http_req_waiting": {
+            "avg": 106.13908459743271,
+            "min": 74.402,
+            "med": 95.50649999999999,
+            "max": 235.311,
+            "p(90)": 143.0772,
+            "p(95)": 156.19539999999998
+        },
+        "iteration_duration": {
+            "avg": 2024.6224638434555,
+            "min": 1668.582792,
+            "med": 1981.460104,
+            "max": 3024.881,
+            "p(90)": 2325.0518375000006,
+            "p(95)": 2501.9780978
+        },
+        "http_reqs": {
+            "rate": 12.242759638021454,
+            "count": 1714
+        },
+        "http_req_receiving": {
+            "p(90)": 605.9490000000003,
+            "p(95)": 714.53355,
+            "avg": 141.30474445740927,
+            "min": 0.012,
+            "med": 0.105,
+            "max": 1455.472
+        }
+    },
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {
+            "Login": {
+                "name": "Login",
+                "path": "::Login",
+                "id": "3be6f351497d03a0d837b765965c8d50",
+                "groups": {},
+                "checks": {
+                        "Login redirige a index (302)": {
+                            "name": "Login redirige a index (302)",
+                            "path": "::Login::Login redirige a index (302)",
+                            "id": "d04b8832e957acd35ab9e671d0732ce9",
+                            "passes": 429,
+                            "fails": 0
+                        },
+                        "Login responde en menos de 2s": {
+                            "passes": 429,
+                            "fails": 0,
+                            "name": "Login responde en menos de 2s",
+                            "path": "::Login::Login responde en menos de 2s",
+                            "id": "e929c649cf3460d2873f27e60d1c1815"
+                        }
+                    }
+            },
+            "Abrir registro": {
+                "name": "Abrir registro",
+                "path": "::Abrir registro",
+                "id": "46c9af3f11c39d52f463aae116e393d8",
+                "groups": {},
+                "checks": {
+                        "Registro status 200": {
+                            "id": "9e0e152bf970576b1817536ec75aae45",
+                            "passes": 428,
+                            "fails": 0,
+                            "name": "Registro status 200",
+                            "path": "::Abrir registro::Registro status 200"
+                        },
+                        "Es el formulario de comprobante": {
+                            "name": "Es el formulario de comprobante",
+                            "path": "::Abrir registro::Es el formulario de comprobante",
+                            "id": "f7a4460d07ee08414633cf7e56f96524",
+                            "passes": 428,
+                            "fails": 0
+                        }
+                    }
+            },
+            "Generar comprobante": {
+                "id": "9a31ab8c5744a352998be325e2bb578f",
+                "groups": {},
+                "checks": {
+                        "Guardar status 200": {
+                            "fails": 0,
+                            "name": "Guardar status 200",
+                            "path": "::Generar comprobante::Guardar status 200",
+                            "id": "0c4fda949f14ed4ff1a2b19a7d1f2ccf",
+                            "passes": 428
+                        },
+                        "Comprobante creado (devuelve id)": {
+                            "fails": 0,
+                            "name": "Comprobante creado (devuelve id)",
+                            "path": "::Generar comprobante::Comprobante creado (devuelve id)",
+                            "id": "6e1ecf930e5180191d90beffc9168811",
+                            "passes": 428
+                        },
+                        "Comprobante responde en menos de 3s": {
+                            "path": "::Generar comprobante::Comprobante responde en menos de 3s",
+                            "id": "04275a9ce4e255c8a84c8f23797f22b1",
+                            "passes": 428,
+                            "fails": 0,
+                            "name": "Comprobante responde en menos de 3s"
+                        }
+                    },
+                "name": "Generar comprobante",
+                "path": "::Generar comprobante"
+            }
+        },
+        "checks": {}
+    }
+}

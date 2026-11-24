@@ -1,0 +1,7 @@
+[
+  { "cuentaDebe": 13004, "cuentaHaber": 13006, "monto": 10 },
+  { "cuentaDebe": 13006, "cuentaHaber": 13004, "monto": 25 },
+  { "cuentaDebe": 13004, "cuentaHaber": 13006, "monto": 50 },
+  { "cuentaDebe": 13006, "cuentaHaber": 13004, "monto": 15 },
+  { "cuentaDebe": 13004, "cuentaHaber": 13006, "monto": 100 }
+]
